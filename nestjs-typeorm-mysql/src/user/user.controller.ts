@@ -10,12 +10,10 @@ import {
   Query,
   Req,
   UploadedFile,
-  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from './entities/user.entity';
-import { AuthGuard } from 'src/auth/auth.guard';
 import { CreaterUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FilterUserDto } from './dto/filter-user.dto';
@@ -23,6 +21,7 @@ import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { storageConfig } from 'helpers/config';
 import { extname } from 'path';
+import { Roles } from 'src/auth/decorator/role.decorator';
 
 @ApiBearerAuth()
 @ApiTags('Users')
@@ -30,7 +29,8 @@ import { extname } from 'path';
 export class UserController {
   constructor(private userService: UserService) {}
 
-  @UseGuards(AuthGuard)
+  // @SetMetadata('roles', ['Admin'])
+  @Roles('Admin')
   @ApiQuery({ name: 'page' })
   @ApiQuery({ name: 'items_per_page' })
   @ApiQuery({ name: 'search' })
@@ -40,31 +40,43 @@ export class UserController {
     return this.userService.getAllUser(query);
   }
 
-  @UseGuards(AuthGuard)
+  @Get('profile')
+  getProfile(@Req() req: any): Promise<User> {
+    return this.userService.getUser(Number(req.user_data.id));
+  }
+
   @Get(':id')
   getUser(@Param('id') id: string): Promise<User> {
     return this.userService.getUser(Number(id));
   }
 
-  @UseGuards(AuthGuard)
+  @Roles('Admin')
   @Post()
   createUser(@Body() createUserDto: CreaterUserDto): Promise<User> {
     return this.userService.createUser(createUserDto);
   }
 
-  @UseGuards(AuthGuard)
+  @Roles('Admin')
   @Put(':id')
   updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.userService.updateUser(Number(id), updateUserDto);
   }
 
-  @UseGuards(AuthGuard)
+  @Roles('Admin')
   @Delete(':id')
   deleteUser(@Param('id') id: string) {
     return this.userService.deleteUser(Number(id));
   }
 
-  @UseGuards(AuthGuard)
+  // @Roles('Admin')
+  // @Delete('multiple')
+  // deleteMultipleUser(
+  //   @Query('ids', new ParseArrayPipe({ items: String, separator: ',' }))
+  //   ids: string[],
+  // ) {
+  //   console.log('Delete multiple user ===> ', ids);
+  // }
+
   @Post('upload-avatar')
   @UseInterceptors(
     FileInterceptor('avatar', {
